@@ -1,7 +1,7 @@
-import pdfkit
-import PyQt5
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget
 
-class SymbolTest(Object):
+class SymbolTest():
 	"""
 	@modifies symbol_, text_context_, visual_context_, has_visual
 	@effects creates a new page object with the supplied fields set to the fiven value
@@ -31,8 +31,8 @@ class SymbolTest(Object):
 
 	"""
 	@modifes text_context_
-	@effects reads in text from the given file,
-	"""
+	@effects reads in text from the given file
+,	"""
 	def add_text_context_from_file(text_file_name):
 		pass
 	def add_visual_context():
@@ -47,7 +47,14 @@ def generateResponder():
 	pass
 
 def main():
-	pass
+	app = QApplication(sys.argv)
+
+	w = QWidget()
+	w.resize(250, 150)
+	w.move(300, 300)
+	w.setWindowTitle('Simple')
+	w.show()
+	sys.exit(app.exec_())
 
 if __name__ == '__main__':
 	main()
