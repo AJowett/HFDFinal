@@ -1,6 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget
 
+"""
+	A single SymbolTest page
+"""
 class SymbolTest():
 	"""
 	@modifies symbol_, text_context_, visual_context_, has_visual
@@ -19,7 +22,9 @@ class SymbolTest():
 	@modifes none
 	@effects draws the test on the provided page, places the fields in the correct locatio
 	"""
-	def draw(self, page):
+	def init_gui(self, parent):
+		#gui = QWidget(parent)
+		#gui.show()
 		pass
 
 	"""
@@ -39,6 +44,17 @@ class SymbolTest():
 		pass
 	def add_symbol():
 		pass
+
+
+class ComprehensionTest():
+	def __init__(self):
+		symbol_tests = []
+	def init_gui(self):
+		w = QWidget()
+		grid = QGridLayout()
+		grid.setSpacing(10)
+		w.setLayout(grid)
+		
 
 def generateBlankPage():
 	pass
