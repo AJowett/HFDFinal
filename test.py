@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtWidgets import qApp, QAction, QApplication, QWidget, QGridLayout, QMainWindow
-from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtWidgets import qApp, QAction, QApplication, QFileDialog, QGridLayout, QLabel, QMainWindow, QPushButton, QWidget
+from PyQt5.QtGui import QIcon, QFont, QPixmap
 
 """
 	A single SymbolTest page
@@ -11,16 +11,13 @@ class SymbolTestWidget(QWidget):
 	@effects creates a new page object with the supplied fields set to the fiven value
 			 or none if the value does not work 
 	"""
-	def __init__(self, symbol=None, text_context=None, visual_context=None, parent):
-		symbol_ = symbol_
-		text_context_ = text_context
-		visual_context_ = visual_context
-		if(not(visual_context_) == None):
-			has_visual = true
-		else:
-			has_visual = false
+	def __init__(self,  parent, symbol=None, text_context=None, visual_context=None):
+		self.symbol_ = symbol
+		self.text_context_ = text_context
+		self.visual_context_ = visual_context
 		super().__init__(parent)
 		self.init_gui(parent)
+
 	"""
 	@modifes none
 	@effects draws the test on the provided page, places the fields in the correct locatio
@@ -28,9 +25,37 @@ class SymbolTestWidget(QWidget):
 	def init_gui(self, parent):
 		layout = QGridLayout()
 		layout.setSpacing(10)
+		textual_label = QLabel(self)
+		visual_label = QLabel(self)
+		symbol_label = QLabel(self)
+		
+		if self.visual_context_ == None and self.text_context_ != None:
+			textual_label.setText(self.text_context_)
+			layout.addWidget(textual_label, 2, 5, 1, 1)
 
-		self.setLayout(self.layout)
-		pass
+		elif self.visual_context_ == None and self.text_context_ == None:
+			textual_label.setText("Add Textual Context Here")
+			layout.addWidget(textual_label, 2, 5, 1, 1)
+		else:
+			visual_label = visual_context_
+
+		textBtn = QPushButton("Add/Modify textual context", self)
+		textBtn.setToolTip("Used to change the description of the context in which this symbol appears")
+		textBtn.resize(textBtn.sizeHint())
+
+		symbolBtn = QPushButton("Add/Change symbol", self)
+		symbolBtn.setToolTip("Used to add or change the symbol on this page")
+		symbolBtn.resize(symbolBtn.sizeHint())
+		symbolBtn.clicked.connect(self.getfile(symbol_label))
+
+		layout.addWidget(textBtn, 3, 5, 1, 1)
+		layout.addWidget(symbolBtn, 3, 1, 1, 1)
+		self.setLayout(layout)
+
+	def getfile(self, label):
+		fname = QFileDialog.getOpenFileName(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
+		print(fname, "\n")
+		label.setPixmap(QPixmap(fname[0]))
 
 	"""
 	@modifies text_context_
@@ -70,12 +95,11 @@ class ComprehensionTestApp(QMainWindow):
 		self.setWindowTitle("Hello")
 		self.setWindowIcon(QIcon("rubber duckie.png"))
 		self.showMaximized()
+		self.load_blank_test()
 
-def generateBlankPage():
-	pass
-
-def generateResponder():
-	pass
+	def load_blank_test(self):
+		test = SymbolTestWidget(self)
+		self.setCentralWidget(test)
 
 def main():
 	app = QApplication(sys.argv)
