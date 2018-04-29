@@ -42,7 +42,8 @@ class Test(QWidget):
 		grid.addWidget(btn, 7, 5, 1, 1)
 
 
-		self.setLayout(grid)self.setGeometry(300, 300, 300, 250)
+		self.setLayout(grid)
+		self.setGeometry(300, 300, 300, 250)
 		self.setWindowTitle("Hello")
 		self.setWindowIcon(QIcon("rubber duckie.png"))
 		self.show()
