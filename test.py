@@ -1,75 +1,7 @@
-TEMPLATE = """
-<!DOCTYPE HTML>
-<HTML>
-	<HEAD>
-		<style>
-		.column {{
-			float: left;
-			padding: 10px;
-			height: 100%;
-			margin 0;
-		}}
-
-		.column.side{{
-			width: 25%;
-		}}
-
-		.column.middle{{
-			width: 50%;
-		}}
-
-		.row {{
-			width: 100%;
-		}}
-
-		.row:before,
-		.row:after{{
-			content: "";
-			display: table;
-			clear: both;
-		}}
-		</style>
-	</HEAD>
-	<BODY>
-		<div class="row">
-			<div class="column side">
-				<img src="{}" width="350" height="350">
-
-			</div>
-			<div class="column middle">
-			</div>
-			<div class="column side">
-				<p>
-					{}
-				</p> 
-			</div>
-		</div>
-		<div class="row">
-			<div class="column side">
-				<p>
-					{}
-				</p>
-				<p>
-					{}
-				</p>
-			</div>
-			<div class="column middle">
-			</div>
-			<div class="colum  side">
-			</div>
-		</div>
-	</BODY>
-</HTML>
-"""
-
-import sys, io, os
-from PyPDF2 import PdfFileWriter, PdfFileReader
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+import sys, os
 from PyQt5.QtWidgets import qApp, QAction, QApplication, QFileDialog, QGridLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QStackedWidget, QTextEdit, QWidget
 from PyQt5.QtGui import QIcon, QFont, QPainter, QPen, QPixmap, QTextDocument
 from PyQt5.QtPrintSupport import QPrinter
-#from PyQt5.QtTextFlag import TextWordWrap
 from PyQt5 import QtCore
 
 """
@@ -88,9 +20,15 @@ class SymbolTestWidget(QWidget):
 		self.visual_context_ = visual_context
 		super().__init__(parent)
 		self.questions = comp_questions
+
 		self.symbol_label = QLabel(self)
 		self.page_label = QLabel(self)
+		self.textual_label = QLabel(self)
 		self.textual_edit = QTextEdit(self)
+		self.visual_label = QLabel(self)
+
+		self.layout = QGridLayout()
+		self.setLayout(self.layout)
 
 		self.page = pageNumber
 		self.numPages = pageTotal
@@ -102,90 +40,109 @@ class SymbolTestWidget(QWidget):
 	@effects draws the test on the provided page, places the fields in the correct locatio
 	"""
 	def init_gui(self, parent):
-		self.setFixedHeight(500)
-		self.setFixedWidth(500)
-
-		textual_label = QLabel(self)
-		visual_label = QLabel(self)
-
-		layout = QGridLayout()
-		layout.setColumnMinimumWidth(3, 10)
-		layout.setSpacing(5)
+		#self.setFixedHeight(800)
+		#self.setFixedWidth(800)
+		self.layout.setSpacing(5)
 
 		if self.symbol_ != None:
 			pic = QPixmap(self.symbol_)
-			pic.scaled(350, 350);
+			pic = pic.scaled(350, 350);
 			self.symbol_label.setPixmap(pic)
 		else:
 			pic = QPixmap("blank image.png")
-			pic.scaled(350, 350)
+			pic = pic.scaled(350, 350)
 			self.symbol_label.setPixmap(pic)
-		layout.setRowStretch(1, 1)
-		layout.setColumnStretch(4, 1)
-		layout.addWidget(self.symbol_label, 1, 1, 2, 2)
 
-		self.page_label.setText("Page " + str(self.page) + "/" + str(self.numPages))
-		layout.addWidget(self.page_label, 0, 10, 1, 1)
+		self.layout.addWidget(self.symbol_label, 6, 1, 3, 5)
+
+		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
+		self.layout.addWidget(self.page_label, 0, 10, 1, 1)
 
 		if self.visual_context_ == None and self.text_context_ != None:
-			textual_label.setText("Context")
+			self.textual_label.setText("<b>Context:</b>")
 			self.textual_edit.setText(self.text_context_)
-			layout.addWidget(textual_label, 2, 4)
-			layout.addWidget(self.textual_edit, 2, 5, 1, 1)
+			self.layout.addWidget(self.textual_label, 6, 7)
+			self.layout.addWidget(self.textual_edit, 7, 7, 1, 1)
 
 		elif self.visual_context_ == None and self.text_context_ == None:
-			textual_label.setText("Context")
-			layout.addWidget(textual_label, 1, 4)
-			layout.addWidget(self.textual_edit, 2, 4, 1, 4)
+			self.textual_label.setText("<b>Context:</b>")
+			self.layout.addWidget(self.textual_label, 6, 7)
+			self.layout.addWidget(self.textual_edit, 7, 7, 1, 1)
 
+			visual_contextBtn = QPushButton("Add Visual Context", self)
+			visual_contextBtn.setToolTip("Used to add or change the image that provides context for the symbol")
+			visual_contextBtn.clicked.connect(self.open_visual)
+			self.layout.addWidget(visual_contextBtn, 9, 7, 1, 1)
+		
 		else:
-			visual_label = visual_context_
+			pic = QPixmap(self.visual_context_)
+			pic = pic.scaled(350, 350)
+			self.visual_label.setPixmap(pic)
+			self.layout.addWidget(visual_label, 6, 7, 2, 2)
 
 		symbolBtn = QPushButton("Add Symbol", self)
 		symbolBtn.setToolTip("Used to add or change the symbol on this page")
 		symbolBtn.resize(symbolBtn.sizeHint())
 		symbolBtn.clicked.connect(self.open_symbol)
-		layout.addWidget(symbolBtn, 3, 1, 1, 1)
+		self.layout.addWidget(symbolBtn, 9, 1, 1, 1)
 
-		counter = 7
+		counter = 13
 		for question in self.questions:
 			qBox = QLineEdit(self)
 			qNumbering = QLabel(self)
 			qBox.setText(question)
-			qNumbering.setText("Question " + str(counter - 6) + ":")
-			layout.addWidget(qNumbering, counter, 1, 1, 1)
-			layout.addWidget(qBox, counter, 2, 1, 1)
+			qNumbering.setText("Question " + str(counter - 12) + ":")
+			self.layout.addWidget(qNumbering, counter, 1, 1, 1)
+			self.layout.addWidget(qBox, counter, 2, 1, 1)
 			counter += 1
-		self.setLayout(layout)
-
 	"""
 	@modifes self.symbol_label
 	@effects opens an image file and sets symbol_label to have that image
 	"""
 	def open_symbol(self):
 		fname = QFileDialog.getOpenFileName(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
-		if fname != None:
+		if fname != ('', ''):
 			pic = QPixmap(fname[0])
 			pic = pic.scaled(350, 350)
 			self.symbol_ = fname[0]
-			#pic.scaled(350, 350)
 			self.symbol_label.setPixmap(pic)
-		else:
+		elif fname == ('', '') and self.symbol_ == None:
 			pic = QPixmap("blank image.png") 
 			pic = pic.scaled(350, 350)
-			#pic.scaled(350, 35)
 			self.symbol_label.setPixmap(pic)
+
+	def open_visual(self):
+		fname = QFileDialog.getOpenFileName(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
+		if fname != ('', ''):
+			pic = QPixmap(fname[0])
+			pic = pic.scaled(350, 350)
+			self.visual_label.setPixmap(pic)
+			if self.visual_context_ == None:
+				self.textual_edit.hide()
+				self.textual_label.hide()
+				self.layout.addWidget(self.visual_label, 1, 1, 4, 5)
+			
+			self.visual_context_ = fname[0]
 
 	def get_page(self):
 		return str(self.page)
+
 	def get_numPages(self):
 		return self.numPages
+
 	def set_page(self, pageNum):
 		self.page = pageNum
-		self.init_gui()
+		self.page_label.setText("Page " + str(self.page) + "/" + str(self.numPages))
+
 	def set_numPages(self, pageTotal):
 		self.numPages = pageTotal
 		self.page_label.setText("Page " + str(self.page) + "/" + str(self.numPages))
+
+	def set_symbol(self, symbol):
+		self.symbol_ = symbol
+		pic = QPixmap(symbol)
+		pic = pic.scaled(350, 350)
+		self.symbol_label.setPixmap(pic)
 
 	def get_symbol(self):
 		return self.symbol_label.pixmap()
@@ -217,35 +174,58 @@ class ComprehensionTestApp(QMainWindow):
 		saveAct.setStatusTip('Saves as PDF')
 		saveAct.triggered.connect(self.save_as_pdf)
 
+		importAct = QAction('&Import symbols', self)
+		importAct.setShortcut('Ctrl+I')
+		importAct.setStatusTip('Imports all the specified images on to their own test page')
+		importAct.triggered.connect(self.import_symbols)
+
 		menu_bar = self.menuBar()
 		filemenu = menu_bar.addMenu('&File')
+		filemenu.addAction(importAct)
 		filemenu.addAction(saveAct)
 		filemenu.addAction(exitAct)
 
-		nextAct = QAction(QIcon("next.png"), 'Next', self)
+		moveLeftAct = QAction('&Move current page left', self)
+		moveLeftAct.setShortcut('Ctrl+,')
+		moveLeftAct.setStatusTip('Moves the current page one page to the left')
+		moveLeftAct.triggered.connect(self.move_test_left)
+
+		moveRightAct = QAction('&Move current page right', self)
+		moveRightAct.setShortcut('Ctrl+.')
+		moveRightAct.setStatusTip('Moves the current page one page to the right')
+		moveRightAct.triggered.connect(self.move_test_right)
+
+		movemenu = menu_bar.addMenu('&Move')
+		movemenu.addAction(moveLeftAct)
+		movemenu.addAction(moveRightAct)
+
+		nextAct = QAction(QIcon("next.png"), 'Next page (Ctrl+L)', self)
+		nextAct.setShortcut('Ctrl+L')
 		nextAct.setStatusTip('Goes to the next page')
 		nextAct.triggered.connect(self.next_page)
 
-		prevAct = QAction(QIcon("prev.png"), "Prev", self)
+		prevAct = QAction(QIcon("prev.png"), "Previous page (Ctrl+K)", self)
+		prevAct.setShortcut('Ctrl+K')
 		prevAct.setStatusTip('Goes to the previous page')
 		prevAct.triggered.connect(self.prev_page)
 
-		newAct = QAction(QIcon("add.png"), "Add", self)
+		newAct = QAction(QIcon("add.png"), "Add a new page (Ctrl+N)", self)
+		newAct.setShortcut('Ctrl+N')
 		newAct.setStatusTip('Creates a new page')
 		newAct.triggered.connect(self.add_blank_test)
 
-		"""
-		nextButton = PicButton(QPixmap("next.png"))
-		nextButton.resize(self.sizeHint())
-		nextButton.clicked.connect(self.next_page)
-		"""
+		remAct = QAction(QIcon("remove.png"), "Delete page (Ctrl+R)", self)
+		remAct.setShortcut('Ctrl+R')
+		remAct.setStatusTip('Deletes the current page')
+		remAct.triggered.connect(self.delete_test)
 
 		tool_bar = self.addToolBar("Next Page")
 		tool_bar.addAction(prevAct)
 		tool_bar.addAction(nextAct)
 		tool_bar.addAction(newAct)
+		tool_bar.addAction(remAct)
 
-		self.setWindowTitle("Hello")
+		self.setWindowTitle("Open Comprehension Test Generator")
 		self.setWindowIcon(QIcon("rubber duckie.png"))
 		self.setGeometry(500, 500, 500, 450)
 		self.add_blank_test()
@@ -283,17 +263,6 @@ class ComprehensionTestApp(QMainWindow):
 		global TEMPLATE
 		filename = QFileDialog.getSaveFileName(self, 'Save to PDF', 'c:\\',"*.pdf")
 		print(filename)
-
-		"""
-		packet = io.BytesIO()
-		can = canvas.Canvas(packet, pagesize=letter)
-		can.drawString(10, 100, "Hello world")
-		can.save()
-
-		packet.seek(0)
-		new_pdf = PdfFileReader(packet)
-		existing_pdf = PdfFileReader(open(filename[0]), "rb")
-		"""
 
 		if filename != ('', ''):
 			if os.path.exists(filename[0]):
@@ -344,20 +313,75 @@ asdfjkl; Let's see how our program handles this, ThisIsAnExtremelyLongWordLetsSe
 				painter.drawLine(70, 998, 600, 998)
 				painter.setPen(cur_pen)
 
-				"""
-				template = TEMPLATE
-				template = template.format(curr_symbol_test.get_symbol(), curr_symbol_test.get_context(), curr_symbol_test.get_question1(), curr_symbol_test.get_question2())
-				print(template)
-				doc = QTextDocument()
-				doc.setHtml(template)
-				print(doc.toHtml())
-				doc.drawContents(painter)
-				"""
 				if(i < self.symbol_tests.count() - 1):
 					printer.newPage()
 	
 			painter.end()
-			
+
+	def import_symbols(self):
+		fnames = QFileDialog.getOpenFileNames(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
+		print(fnames)
+		if fnames != ([], ''):
+			for i in range(len(fnames[0]) - 1, -1, -1):
+				question1 = "Exactly what do you think this symbol means?"
+				question2 = "What action would you take in response to this symbol?"
+				page = self.symbol_tests.count() + 1
+				test = SymbolTestWidget(self, comp_questions=[question1, question2], pageNumber=page, pageTotal=page)
+				test.set_symbol(fnames[0][i])
+				self.symbol_tests.addWidget(test)
+			self.symbol_tests.setCurrentIndex(page - 1)
+
+	def delete_test(self):
+		if self.symbol_tests.currentIndex() != 0:
+			cur_idx = self.symbol_tests.currentIndex()
+			self.symbol_tests.setCurrentIndex(cur_idx - 1)
+			self.symbol_tests.removeWidget(self.symbol_tests.widget(cur_idx))
+			for i in range(0, self.symbol_tests.count()):
+				cur_symbol_test = self.symbol_tests.widget(i)
+				cur_symbol_test.set_numPages(self.symbol_tests.count())
+				
+				if i >= cur_idx:
+					cur_symbol_test.set_page(i + 1)
+
+		elif self.symbol_tests.currentIndex() == 0 and self.symbol_tests.count() > 1:
+			self.symbol_tests.setCurrentIndex(1)
+			self.symbol_tests.removeWidget(self.symbol_tests.widget(0))
+			for i in range(0, self.symbol_tests.count()):
+				cur_symbol_test = self.symbol_tests.widget(i)
+				cur_symbol_test.set_numPages(self.symbol_tests.count())
+				cur_symbol_test.set_page(i + 1)
+
+		elif self.symbol_tests.currentIndex() == 0 and self.symbol_tests.count() == 1:
+			question1 = "Exactly what do you think this symbol means?"
+			question2 = "What action would you take in response to this symbol?"
+			page = 1
+			test = SymbolTestWidget(self, comp_questions=[question1, question2], pageNumber=page, pageTotal=page)
+			self.symbol_tests.addWidget(test)
+			self.symbol_tests.setCurrentIndex(1)
+			self.symbol_tests.removeWidget(self.symbol_tests.widget(0))
+
+	def move_test_left(self):
+		cur_idx = self.symbol_tests.currentIndex()
+		if cur_idx > 0:
+			cur_widget = self.symbol_tests.widget(cur_idx)
+			prev_widget = self.symbol_tests.widget(cur_idx - 1)
+			cur_widget.set_page(int(cur_widget.get_page()) - 1)
+			prev_widget.set_page(int(prev_widget.get_page()) + 1)
+
+			self.symbol_tests.removeWidget(prev_widget)
+			self.symbol_tests.insertWidget(self.symbol_tests.indexOf(cur_widget) + 1, prev_widget)
+		
+	def move_test_right(self):
+		cur_idx = self.symbol_tests.currentIndex()
+		if cur_idx < self.symbol_tests.count() - 1:
+			cur_widget = self.symbol_tests.widget(cur_idx)
+			next_widget = self.symbol_tests.widget(cur_idx + 1)
+			cur_widget.set_page(int(cur_widget.get_page()) + 1)
+			next_widget.set_page(int(next_widget.get_page()) - 1)
+
+			self.symbol_tests.removeWidget(next_widget)
+			self.symbol_tests.insertWidget(self.symbol_tests.indexOf(cur_widget), next_widget)
+
 def main():
 	app = QApplication(sys.argv)
 	test = ComprehensionTestApp()
