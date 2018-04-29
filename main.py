@@ -1,5 +1,6 @@
 import sys, os
-from PyQt5.QtWidgets import qApp, QAction, QApplication, QFileDialog, QGridLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QStackedWidget, QTextEdit, QWidget
+from PyPDF2 import PdfFileReader
+from PyQt5.QtWidgets import qApp, QAction, QApplication, QFileDialog, QGridLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QPushButton, QStackedWidget, QTextEdit, QWidget
 from PyQt5.QtGui import QIcon, QFont, QPainter, QPen, QPixmap, QTextDocument
 from PyQt5.QtPrintSupport import QPrinter
 from PyQt5 import QtCore
@@ -132,11 +133,11 @@ class SymbolTestWidget(QWidget):
 
 	def set_page(self, pageNum):
 		self.page = pageNum
-		self.page_label.setText("Page " + str(self.page) + "/" + str(self.numPages))
+		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
 
 	def set_numPages(self, pageTotal):
 		self.numPages = pageTotal
-		self.page_label.setText("Page " + str(self.page) + "/" + str(self.numPages))
+		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
 
 	def set_symbol(self, symbol):
 		self.symbol_ = symbol
@@ -156,11 +157,15 @@ class SymbolTestWidget(QWidget):
 		if self.visual_context_ != None:
 			return True
 		return False
+	def get_visual_context(self):
+		return self.visual_label.pixmap()
 
 class ComprehensionTestApp(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		self.symbol_tests = QStackedWidget()
+		self.question1 = "Exactly what do you think this symbol means?"
+		self.question2 = "What action would you take in response to this symbol?"
 		self.init_gui()
 
 	def init_gui(self):
@@ -185,6 +190,10 @@ class ComprehensionTestApp(QMainWindow):
 		filemenu.addAction(saveAct)
 		filemenu.addAction(exitAct)
 
+		newQuestAct = QAction('&Change default questions', self)
+		newQuestAct.setStatusTip('Changes the default questions asked about the symbol')
+		newQuestAct.triggered.connect(self.change_questions)
+
 		moveLeftAct = QAction('&Move current page left', self)
 		moveLeftAct.setShortcut('Ctrl+,')
 		moveLeftAct.setStatusTip('Moves the current page one page to the left')
@@ -195,9 +204,10 @@ class ComprehensionTestApp(QMainWindow):
 		moveRightAct.setStatusTip('Moves the current page one page to the right')
 		moveRightAct.triggered.connect(self.move_test_right)
 
-		movemenu = menu_bar.addMenu('&Move')
-		movemenu.addAction(moveLeftAct)
-		movemenu.addAction(moveRightAct)
+		editmenu = menu_bar.addMenu('&Edit')
+		editmenu.addAction(newQuestAct)
+		editmenu.addAction(moveLeftAct)
+		editmenu.addAction(moveRightAct)
 
 		nextAct = QAction(QIcon("next.png"), 'Next page (Ctrl+L)', self)
 		nextAct.setShortcut('Ctrl+L')
@@ -234,18 +244,14 @@ class ComprehensionTestApp(QMainWindow):
 		self.show()
 
 	def add_blank_test(self):
-		question1 = "Exactly what do you think this symbol means?"
-		question2 = "What action would you take in response to this symbol?"
 		page = self.symbol_tests.count() + 1
-		test = SymbolTestWidget(self, comp_questions=[question1, question2], pageNumber=page, pageTotal=page)
+		test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
 		self.symbol_tests.addWidget(test)
 		self.symbol_tests.setCurrentIndex(page - 1)
 
 	def add_test(self):
-		question1 = "Exactly what do you think this symbol means?"
-		question2 = "What action would you take in response to this symbol?"
 		page = self.symbol_tests.count() + 1
-		test = SymbolTestWidget(self, comp_questions=[question1, question2], pageNumber=page, pageTotal=page)
+		test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
 		self.symbol_tests.addWidget(test)
 		self.symbol_tests.setCurrentIndex(page - 1)
 
@@ -278,9 +284,6 @@ class ComprehensionTestApp(QMainWindow):
 			printer.setOutputFormat(QPrinter.PdfFormat)
 			printer.setOutputFileName(filename[0])
 			
-			test = """This is a very long sentence that serves absolutely no purpose whatsoever.
-asdfjkl; Let's see how our program handles this, ThisIsAnExtremelyLongWordLetsSeeWhatHappensShallWe? DicksNShit49420@cox.net Beep Beep Imma Jepp"""
-
 			painter = QPainter()
 			font = QFont("times")
 			font.setPointSize(12)
@@ -288,31 +291,57 @@ asdfjkl; Let's see how our program handles this, ThisIsAnExtremelyLongWordLetsSe
 			painter.setFont(font)
 
 			for i in range(0, self.symbol_tests.count()):
-				#doc = QTextDocument()
-				curr_symbol_test = self.symbol_tests.widget(i)
+				cur_symbol_test = self.symbol_tests.widget(i)
+				
+				if cur_symbol_test.has_visual_context() == False:
+					pixmap = cur_symbol_test.get_symbol()
+					pixmap = pixmap.scaled(350, 350)
+					painter.drawPixmap(30, 100, pixmap)
+					painter.drawText(750, 20, cur_symbol_test.get_page())
+					painter.drawText(420, 200, 350, 400, QtCore.Qt.TextWordWrap, "Context: " + cur_symbol_test.get_context())
+					painter.drawText(30, 600, cur_symbol_test.get_question1())
+					painter.drawText(30, 830, cur_symbol_test.get_question2())
 
-				pixmap = curr_symbol_test.get_symbol()
-				pixmap = pixmap.scaled(350, 350)
-				#print(pixmap)
-				painter.drawPixmap(30, 100, pixmap)
-				painter.drawText(750, 20, curr_symbol_test.get_page())
-				painter.drawText(420, 200, 350, 400, QtCore.Qt.TextWordWrap, "Context: " + curr_symbol_test.get_context())
-				painter.drawText(30, 600, curr_symbol_test.get_question1())
-				painter.drawText(30, 830, curr_symbol_test.get_question2())
+					cur_pen = painter.pen()
+					line_pen = QPen()
+					line_pen.setWidth(2)
+					painter.setPen(line_pen)
+					painter.drawLine(70, 656, 600, 656)
+					painter.drawLine(70, 712, 600, 712)
+					painter.drawLine(70, 768, 600, 768)
 
-				cur_pen = painter.pen()
-				line_pen = QPen()
-				line_pen.setWidth(2)
-				painter.setPen(line_pen)
-				painter.drawLine(70, 656, 600, 656)
-				painter.drawLine(70, 712, 600, 712)
-				painter.drawLine(70, 768, 600, 768)
+					painter.drawLine(70, 886, 600, 886)
+					painter.drawLine(70, 942, 600, 942)
+					painter.drawLine(70, 998, 600, 998)
+					painter.setPen(cur_pen)
+				else:
+					pixmap = cur_symbol_test.get_visual_context()
+					pixmap = pixmap.scaled(300, 300)
 
-				painter.drawLine(70, 886, 600, 886)
-				painter.drawLine(70, 942, 600, 942)
-				painter.drawLine(70, 998, 600, 998)
-				painter.setPen(cur_pen)
+					painter.drawPixmap(200, 10, pixmap)
 
+					pixmap = cur_symbol_test.get_symbol()
+					pixmap = pixmap.scaled(250, 250)
+
+					painter.drawPixmap(225, 320, pixmap)
+
+					painter.drawText(750, 20, cur_symbol_test.get_page())
+					#painter.drawText(420, 200, 350, 400, QtCore.Qt.TextWordWrap, "Context: " + cur_symbol_test.get_context())
+					painter.drawText(30, 600, cur_symbol_test.get_question1())
+					painter.drawText(30, 830, cur_symbol_test.get_question2())
+
+					cur_pen = painter.pen()
+					line_pen = QPen()
+					line_pen.setWidth(2)
+					painter.setPen(line_pen)
+					painter.drawLine(70, 656, 600, 656)
+					painter.drawLine(70, 712, 600, 712)
+					painter.drawLine(70, 768, 600, 768)
+
+					painter.drawLine(70, 886, 600, 886)
+					painter.drawLine(70, 942, 600, 942)
+					painter.drawLine(70, 998, 600, 998)
+					painter.setPen(cur_pen)
 				if(i < self.symbol_tests.count() - 1):
 					printer.newPage()
 	
@@ -320,13 +349,11 @@ asdfjkl; Let's see how our program handles this, ThisIsAnExtremelyLongWordLetsSe
 
 	def import_symbols(self):
 		fnames = QFileDialog.getOpenFileNames(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
-		print(fnames)
+		#print(fnames)
 		if fnames != ([], ''):
 			for i in range(len(fnames[0]) - 1, -1, -1):
-				question1 = "Exactly what do you think this symbol means?"
-				question2 = "What action would you take in response to this symbol?"
 				page = self.symbol_tests.count() + 1
-				test = SymbolTestWidget(self, comp_questions=[question1, question2], pageNumber=page, pageTotal=page)
+				test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
 				test.set_symbol(fnames[0][i])
 				self.symbol_tests.addWidget(test)
 			self.symbol_tests.setCurrentIndex(page - 1)
@@ -352,10 +379,8 @@ asdfjkl; Let's see how our program handles this, ThisIsAnExtremelyLongWordLetsSe
 				cur_symbol_test.set_page(i + 1)
 
 		elif self.symbol_tests.currentIndex() == 0 and self.symbol_tests.count() == 1:
-			question1 = "Exactly what do you think this symbol means?"
-			question2 = "What action would you take in response to this symbol?"
 			page = 1
-			test = SymbolTestWidget(self, comp_questions=[question1, question2], pageNumber=page, pageTotal=page)
+			test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
 			self.symbol_tests.addWidget(test)
 			self.symbol_tests.setCurrentIndex(1)
 			self.symbol_tests.removeWidget(self.symbol_tests.widget(0))
@@ -381,6 +406,14 @@ asdfjkl; Let's see how our program handles this, ThisIsAnExtremelyLongWordLetsSe
 
 			self.symbol_tests.removeWidget(next_widget)
 			self.symbol_tests.insertWidget(self.symbol_tests.indexOf(cur_widget), next_widget)
+
+	def change_questions(self):
+		text = QInputDialog.getText(self, "Question 1 Input", "Question 1: ", QLineEdit.Normal, self.question1)
+		if str(text[0]) != '':
+			self.question1 = str(text[0])
+		text = QInputDialog.getText(self, "Question 2 Input", "Question 2: ", QLineEdit.Normal, self.question2)
+		if str(text[0]) != '':
+			self.question2 = str(text[0])
 
 def main():
 	app = QApplication(sys.argv)
