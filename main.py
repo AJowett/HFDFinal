@@ -1,12 +1,12 @@
 import sys, os
 from PyPDF2 import PdfFileReader
-from PyQt5.QtWidgets import qApp, QAction, QApplication, QFileDialog, QGridLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QPushButton, QStackedWidget, QTextEdit, QWidget
+from PyQt5.QtWidgets import qApp, QAction, QApplication, QFileDialog, QGridLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QPushButton, QStackedWidget, QTextEdit, QWidget
 from PyQt5.QtGui import QIcon, QFont, QPainter, QPen, QPixmap, QTextDocument
 from PyQt5.QtPrintSupport import QPrinter
 from PyQt5 import QtCore
 
 """
-	A single SymbolTest page
+A single SymbolTest page
 """
 class SymbolTestWidget(QWidget):
 	"""
@@ -14,7 +14,7 @@ class SymbolTestWidget(QWidget):
 	@effects creates a new page object with the supplied fields set to the fiven value
 			 or none if the value does not work 
 	"""
-	def __init__(self,  parent, symbol=None, text_context=None, visual_context=None, comp_questions=[], pageNumber=0, pageTotal=0):
+	def __init__(self, parent, symbol=None, text_context=None, visual_context=None, comp_questions=[], pageNumber=0, pageTotal=0):
 		self.parent_ = parent
 		self.symbol_ = symbol
 		self.text_context_ = text_context
@@ -28,6 +28,9 @@ class SymbolTestWidget(QWidget):
 		self.textual_edit = QTextEdit(self)
 		self.visual_label = QLabel(self)
 
+		self.visual_contextBtn = QPushButton()
+		self.text_contextBtn = QPushButton()
+
 		self.layout = QGridLayout()
 		self.setLayout(self.layout)
 
@@ -35,10 +38,8 @@ class SymbolTestWidget(QWidget):
 		self.numPages = pageTotal
 		self.init_gui(parent)
 
-
 	"""
-	@modifes none
-	@effects draws the test on the provided page, places the fields in the correct locatio
+	@modifies 
 	"""
 	def init_gui(self, parent):
 		#self.setFixedHeight(800)
@@ -58,28 +59,39 @@ class SymbolTestWidget(QWidget):
 
 		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
 		self.layout.addWidget(self.page_label, 0, 10, 1, 1)
-
+		#self.layout.columnMinimumWidth(10)
+		self.layout.setRowStretch(0, 1)
+		self.layout.setRowStretch(15, 1)
+		self.layout.setColumnStretch(3, 1)
+		self.layout.setColumnStretch(2, 1)
+		self.layout.setColumnStretch(9, 2)
+		self.layout.setColumnStretch(0, 2)
 		if self.visual_context_ == None and self.text_context_ != None:
 			self.textual_label.setText("<b>Context:</b>")
 			self.textual_edit.setText(self.text_context_)
-			self.layout.addWidget(self.textual_label, 6, 7)
-			self.layout.addWidget(self.textual_edit, 7, 7, 1, 1)
+			self.layout.addWidget(self.textual_label, 6, 8)
+			self.layout.addWidget(self.textual_edit, 7, 8, 1, 1)
 
 		elif self.visual_context_ == None and self.text_context_ == None:
 			self.textual_label.setText("<b>Context:</b>")
-			self.layout.addWidget(self.textual_label, 6, 7)
-			self.layout.addWidget(self.textual_edit, 7, 7, 1, 1)
+			self.layout.addWidget(self.textual_label, 6, 8)
+			self.layout.addWidget(self.textual_edit, 7, 8, 1, 1)
 
-			visual_contextBtn = QPushButton("Add Visual Context", self)
-			visual_contextBtn.setToolTip("Used to add or change the image that provides context for the symbol")
-			visual_contextBtn.clicked.connect(self.open_visual)
-			self.layout.addWidget(visual_contextBtn, 9, 7, 1, 1)
+			self.text_contextBtn = QPushButton("Change to Textual/Visual Context", self)
+			self.text_contextBtn.setToolTip("Switch between textual and visual context modes")
+			self.text_contextBtn.clicked.connect(self.switch_to_textual)
+			self.layout.addWidget(self.text_contextBtn, 9, 2, 1, 1)
+
+			self.visual_contextBtn = QPushButton("Add Visual Context", self)
+			self.visual_contextBtn.setToolTip("Used to add or change the image that provides context for the symbol")
+			self.visual_contextBtn.clicked.connect(self.open_visual)
+			self.layout.addWidget(self.visual_contextBtn, 9, 8, 1, 1)
 		
 		else:
 			pic = QPixmap(self.visual_context_)
 			pic = pic.scaled(350, 350)
 			self.visual_label.setPixmap(pic)
-			self.layout.addWidget(visual_label, 6, 7, 2, 2)
+			self.layout.addWidget(self.visual_label, 1, 1, 4, 5)
 
 		symbolBtn = QPushButton("Add Symbol", self)
 		symbolBtn.setToolTip("Used to add or change the symbol on this page")
@@ -121,9 +133,20 @@ class SymbolTestWidget(QWidget):
 			if self.visual_context_ == None:
 				self.textual_edit.hide()
 				self.textual_label.hide()
+				self.text_contextBtn.show()
 				self.layout.addWidget(self.visual_label, 1, 1, 4, 5)
 			
 			self.visual_context_ = fname[0]
+
+	def switch_to_textual(self):
+		if self.textual_label.isVisible():
+			self.textual_edit.hide()
+			self.textual_label.hide()
+			self.visual_label.show()
+		else:
+			self.textual_label.show()
+			self.textual_edit.show()
+			self.visual_label.hide()
 
 	def get_page(self):
 		return str(self.page)
@@ -159,6 +182,11 @@ class SymbolTestWidget(QWidget):
 		return False
 	def get_visual_context(self):
 		return self.visual_label.pixmap()
+	def print_visual_context(self):
+		if self.visual_context_ != None and self.text_contextBtn.isVisible():
+			return True
+		else:
+			return False
 
 class ComprehensionTestApp(QMainWindow):
 	def __init__(self):
@@ -190,8 +218,14 @@ class ComprehensionTestApp(QMainWindow):
 		filemenu.addAction(saveAct)
 		filemenu.addAction(exitAct)
 
+		goToAct = QAction('&Go to page', self)
+		goToAct.setStatusTip('Go to the specified page')
+		goToAct.setShortcut('Ctrl+G')
+		goToAct.triggered.connect(self.go_to_page)
+
 		newQuestAct = QAction('&Change default questions', self)
 		newQuestAct.setStatusTip('Changes the default questions asked about the symbol')
+		newQuestAct.setShortcut('Ctrl+P')
 		newQuestAct.triggered.connect(self.change_questions)
 
 		moveLeftAct = QAction('&Move current page left', self)
@@ -204,10 +238,17 @@ class ComprehensionTestApp(QMainWindow):
 		moveRightAct.setStatusTip('Moves the current page one page to the right')
 		moveRightAct.triggered.connect(self.move_test_right)
 
+		moveToAct = QAction('Move current page to', self)
+		moveToAct.setShortcut('Ctrl+')
+		moveToAct.setStatusTip('Moves the current page to the specified page')
+		moveToAct.triggered.connect(self.move_to_page)
+
 		editmenu = menu_bar.addMenu('&Edit')
+		editmenu.addAction(goToAct)
 		editmenu.addAction(newQuestAct)
 		editmenu.addAction(moveLeftAct)
 		editmenu.addAction(moveRightAct)
+		editmenu.addAction(moveToAct)
 
 		nextAct = QAction(QIcon("next.png"), 'Next page (Ctrl+L)', self)
 		nextAct.setShortcut('Ctrl+L')
@@ -248,22 +289,16 @@ class ComprehensionTestApp(QMainWindow):
 		test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
 		self.symbol_tests.addWidget(test)
 		self.symbol_tests.setCurrentIndex(page - 1)
-
-	def add_test(self):
-		page = self.symbol_tests.count() + 1
-		test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
-		self.symbol_tests.addWidget(test)
-		self.symbol_tests.setCurrentIndex(page - 1)
+		for i in range(0, self.symbol_tests.count() - 1):
+			self.symbol_tests.widget(i).set_numPages(self.symbol_tests.count())
 
 	def next_page(self):
 		if self.symbol_tests.currentIndex() < self.symbol_tests.count() - 1:
 			self.symbol_tests.setCurrentIndex(self.symbol_tests.currentIndex() + 1)
-			self.symbol_tests.currentWidget().set_numPages(self.symbol_tests.count())
 
 	def prev_page(self):
 		if self.symbol_tests.currentIndex() > 0:
 			self.symbol_tests.setCurrentIndex(self.symbol_tests.currentIndex() - 1)
-			self.symbol_tests.currentWidget().set_numPages(self.symbol_tests.count())
 
 	def save_as_pdf(self):
 		global TEMPLATE
@@ -406,6 +441,57 @@ class ComprehensionTestApp(QMainWindow):
 
 			self.symbol_tests.removeWidget(next_widget)
 			self.symbol_tests.insertWidget(self.symbol_tests.indexOf(cur_widget), next_widget)
+
+	def move_to_page(self):
+		text = QInputDialog.getText(self, "Move Page", "Move current page to: ", QLineEdit.Normal)
+		try:
+			x = int(text[0])
+			if x <= 0 or x > self.symbol_tests.count():
+				error = QMessageBox()
+				error.setIcon(QMessageBox.Warning)
+				error.setStandardButtons(QMessageBox.Ok)
+				#error.setTitle("Error")
+				error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
+				error.exec_()
+				return
+			cur_idx = self.symbol_tests.currentIndex()
+			cur_widget = self.symbol_tests.widget(cur_idx)
+			cur_widget.set_page(x - 1)
+
+			self.symbol_tests.removeWidget(cur_widget)
+			self.symbol_tests.insertWidget(x - 1, cur_widget)
+			self.symbol_tests.setCurrentIndex(x - 1)
+
+			for i in range(0, self.symbol_tests.count()):
+				loop_widget = self.symbol_tests.widget(i)
+				loop_widget.set_page(i + 1)
+
+		except ValueError:
+			error = QMessageBox()
+			error.setIcon(QMessageBox.Warning)
+			error.setStandardButtons(QMessageBox.Ok)
+			#error.setTitle("Error")
+			error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
+			error.exec_()
+
+	def go_to_page(self):
+		text = QInputDialog.getText(self, "Go to", "Go to page: ", QLineEdit.Normal)
+		try:
+			x = int(text[0])
+			if x <= 0 or x > self.symbol_tests.count():
+				error = QMessageBox()
+				error.setIcon(QMessageBox.Warning)
+				error.setStandardButtons(QMessageBox.Ok)
+				error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
+				error.exec_()
+				return
+			self.symbol_tests.setCurrentIndex(x - 1)
+		except ValueError:
+			error = QMessageBox()
+			error.setIcon(QMessageBox.Warning)
+			error.setStandardButtons(QMessageBox.Ok)
+			error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
+			error.exec_()
 
 	def change_questions(self):
 		text = QInputDialog.getText(self, "Question 1 Input", "Question 1: ", QLineEdit.Normal, self.question1)
