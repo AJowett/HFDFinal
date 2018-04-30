@@ -39,7 +39,9 @@ class SymbolTestWidget(QWidget):
 		self.init_gui(parent)
 
 	"""
-	@modifies 
+	@modifies self.symbol_label, self.layout, self.textual_label, self.textual_edit
+			  self.text_contextBtn, self.visual_label
+	@effects  initializes the SymbolTestWidget gui
 	"""
 	def init_gui(self, parent):
 		self.layout.setSpacing(5)
@@ -58,25 +60,27 @@ class SymbolTestWidget(QWidget):
 		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
 		self.layout.addWidget(self.page_label, 0, 10, 1, 1)
 
+		self.layout.setColumnMinimumWidth(8, 5)
+
 		self.layout.setRowStretch(0, 1)
 		self.layout.setRowStretch(15, 1)
 		self.layout.setColumnStretch(3, 1)
 		self.layout.setColumnStretch(2, 1)
-		self.layout.setColumnStretch(9, 2)
+		self.layout.setColumnStretch(10, 2)
 		self.layout.setColumnStretch(0, 2)
 		
 		if self.visual_context_ == None and self.text_context_ != None:
 			self.textual_label.setText("<b>Context:</b>")
 			self.textual_edit.setText(self.text_context_)
-			self.layout.addWidget(self.textual_label, 6, 8)
-			self.layout.addWidget(self.textual_edit, 7, 8, 1, 1)
+			self.layout.addWidget(self.textual_label, 6, 9)
+			self.layout.addWidget(self.textual_edit, 7, 9, 1, 1)
 
 		elif self.visual_context_ == None and self.text_context_ == None:
 			self.textual_label.setText("<b>Context:</b>")
-			self.layout.addWidget(self.textual_label, 6, 8)
-			self.layout.addWidget(self.textual_edit, 7, 8, 1, 1)
+			self.layout.addWidget(self.textual_label, 6, 9)
+			self.layout.addWidget(self.textual_edit, 7, 9, 1, 1)
 
-			self.text_contextBtn = QPushButton("Change to Textual/Visual Context View", self)
+			self.text_contextBtn = QPushButton("Change to visual context mode", self)
 			self.text_contextBtn.setToolTip("Switch between textual and visual context modes, whichever one you're in will be saved")
 			self.text_contextBtn.clicked.connect(self.switch_to_textual)
 			self.layout.addWidget(self.text_contextBtn, 9, 2, 1, 1)
@@ -84,7 +88,7 @@ class SymbolTestWidget(QWidget):
 			self.visual_contextBtn = QPushButton("Add Visual Context", self)
 			self.visual_contextBtn.setToolTip("Used to add or change the image that provides context for the symbol")
 			self.visual_contextBtn.clicked.connect(self.open_visual)
-			self.layout.addWidget(self.visual_contextBtn, 9, 8, 1, 1)
+			self.layout.addWidget(self.visual_contextBtn, 9, 9, 1, 1)
 		
 		else:
 			pic = QPixmap(self.visual_context_)
@@ -104,12 +108,13 @@ class SymbolTestWidget(QWidget):
 			qNumbering = QLabel(self)
 			qBox.setText(question)
 			qNumbering.setText("Question " + str(counter - 12) + ":")
-			self.layout.addWidget(qNumbering, counter, 1, 1, 1)
-			self.layout.addWidget(qBox, counter, 2, 1, 1)
+			self.layout.addWidget(qNumbering, counter, 1, 1, 3)
+			self.layout.addWidget(qBox, counter, 2, 1, 3)
 			counter += 1
 	"""
-	@modifes self.symbol_label
-	@effects opens an image file and sets symbol_label to have that image
+	@modifes self.symbol_label, self.symbol_
+	@effects opens an image file and sets symbol_label to have that image and 
+			 self.symbol_ to the image file location
 	"""
 	def open_symbol(self):
 		fname = QFileDialog.getOpenFileName(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
@@ -124,6 +129,12 @@ class SymbolTestWidget(QWidget):
 			pic = pic.scaled(350, 350)
 			self.symbol_label.setPixmap(pic)
 
+	"""
+	@modifies self.visual_label, self.visual_context_, self.textual_edit, 
+			  self.textual_label, self.text_contextBtn, self.layout
+	@effects  switches the mode to visual context mode, hides the textual context related items,
+			  shows the visual context related items
+	"""
 	def open_visual(self):
 		fname = QFileDialog.getOpenFileName(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
 		if fname != ('', ''):
@@ -139,16 +150,23 @@ class SymbolTestWidget(QWidget):
 			
 			self.visual_context_ = fname[0]
 
+	"""
+	@modifies self.textual_edit, self.textual_label, self.visual_label, self.text_contextBtn
+	@effects  switches between visual and textual context modes, hides or shows the 
+			  appropriate information for the mode being switched to
+	"""
 	def switch_to_textual(self):
 		if self.textual_label.isVisible():
 			self.textual_edit.hide()
 			self.textual_label.hide()
 			self.visual_label.show()
+			self.text_contextBtn.setText("Change to textual context mode")
 		
 		else:
 			self.textual_label.show()
 			self.textual_edit.show()
 			self.visual_label.hide()
+			self.text_contextBtn.setText("Change to visual context mode")
 
 	def get_page(self):
 		return str(self.page)
@@ -156,20 +174,36 @@ class SymbolTestWidget(QWidget):
 	def get_numPages(self):
 		return self.numPages
 
+	"""
+	@modifies self.page, self.page_label
+	@effects  sets the page to pageNum and updates the label
+	"""
 	def set_page(self, pageNum):
 		self.page = pageNum
 		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
 
+	"""
+	@modifies self.numPages, self.page_label
+	@effects  sets numPages to pageTotal and updates the label
+	"""
 	def set_numPages(self, pageTotal):
 		self.numPages = pageTotal
 		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
 
+	"""
+	@modifies self.symbol_, self.symbol_label
+	@effects  self.symbol_ is set to the symbol image file name and 
+			  self.symbol_label is update to that image
+	"""
 	def set_symbol(self, symbol):
 		self.symbol_ = symbol
 		pic = QPixmap(symbol)
 		pic = pic.scaled(350, 350)
 		self.symbol_label.setPixmap(pic)
 
+	"""
+	@returns self.symbol_ as a pixmap
+	"""
 	def get_symbol(self):
 		return self.symbol_label.pixmap()
 
@@ -189,7 +223,10 @@ class SymbolTestWidget(QWidget):
 	
 	def get_visual_context(self):
 		return self.visual_label.pixmap()
-	
+
+	"""
+	@returns true if we are printing an image as context
+	"""
 	def print_visual_context(self):
 		if self.visual_context_ != None and self.text_contextBtn.isVisible():
 			return True
@@ -197,6 +234,10 @@ class SymbolTestWidget(QWidget):
 			return False
 
 class ComprehensionTestApp(QMainWindow):
+	"""
+	@modifies self.symbol_test, self.question1, self.question2
+	@effects makes a new ComprehensionTestApp
+	"""
 	def __init__(self):
 		super().__init__()
 		self.symbol_tests = QStackedWidget()
@@ -204,6 +245,10 @@ class ComprehensionTestApp(QMainWindow):
 		self.question2 = "What action would you take in response to this symbol?"
 		self.init_gui()
 
+	"""
+	@modifies self
+	@effects sets up the main window
+	"""
 	def init_gui(self):
 		exitAct = QAction('&Exit', self)
 		exitAct.setShortcut('Ctrl+Q')
@@ -292,6 +337,10 @@ class ComprehensionTestApp(QMainWindow):
 
 		self.show()
 
+	"""
+	@modifies none
+	@effects  confirms if the user wishes to exit
+	"""
 	def closeEvent(self, event):
 		msg = QMessageBox.question(self, 'Message',
             "Really quit?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -300,6 +349,10 @@ class ComprehensionTestApp(QMainWindow):
 		else:
 			event.ignore()
 
+	"""
+	@modifies none
+	@effects  confirms if the user wishes to exit
+	"""
 	def quit(self):
 		msg = QMessageBox.question(self, 'Message',
             "Really quit?", QMessageBox.Yes | 
@@ -307,6 +360,11 @@ class ComprehensionTestApp(QMainWindow):
 		if msg == QMessageBox.Yes:
 			qApp.quit()
 
+	"""
+	@modifies self.symbol_tests
+	@effects  adds a blank symbol_test to the end of symbol_tests
+			  sets the current symbol_test to the new one
+	"""
 	def add_blank_test(self):
 		page = self.symbol_tests.count() + 1
 		test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
@@ -315,14 +373,26 @@ class ComprehensionTestApp(QMainWindow):
 		for i in range(0, self.symbol_tests.count() - 1):
 			self.symbol_tests.widget(i).set_numPages(self.symbol_tests.count())
 
+	"""
+	@modifies self.symbol_tests
+	@effects  changes the current symbol_test to the next one
+	"""
 	def next_page(self):
 		if self.symbol_tests.currentIndex() < self.symbol_tests.count() - 1:
 			self.symbol_tests.setCurrentIndex(self.symbol_tests.currentIndex() + 1)
 
+	"""
+	@modifies self.symbol_test
+	@effects  changes the current symbol_test to the previous one
+	"""
 	def prev_page(self):
 		if self.symbol_tests.currentIndex() > 0:
 			self.symbol_tests.setCurrentIndex(self.symbol_tests.currentIndex() - 1)
 
+	"""
+	@modifies none
+	@effects  saves all the symbol_tests as seperate pages on a PDF document
+	"""
 	def save_as_pdf(self):
 		filename = QFileDialog.getSaveFileName(self, 'Save to PDF', 'c:\\',"*.pdf")
 
@@ -421,6 +491,11 @@ class ComprehensionTestApp(QMainWindow):
 	
 			painter.end()
 
+	"""
+	@modifies self.symbol_tests
+	@effects  adds all the specified symbols to their own symbol_test and adds those
+			  tests to self.symbol_tests
+	"""
 	def import_symbols(self):
 		fnames = QFileDialog.getOpenFileNames(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
 		if fnames != ([], ''):
@@ -431,7 +506,17 @@ class ComprehensionTestApp(QMainWindow):
 				self.symbol_tests.addWidget(test)
 			self.symbol_tests.setCurrentIndex(page - 1)
 
+	"""
+	@modifies self.symbol_tests
+	@effects  removes the current test from self.symbol_tests
+	"""
 	def delete_test(self):
+		msg = QMessageBox.question(self, 'Message',
+            "Delete test?", QMessageBox.Yes | 
+            QMessageBox.No, QMessageBox.No)
+		if msg == QMessageBox.No:
+			return
+
 		if self.symbol_tests.currentIndex() != 0:
 			cur_idx = self.symbol_tests.currentIndex()
 			self.symbol_tests.setCurrentIndex(cur_idx - 1)
@@ -458,6 +543,11 @@ class ComprehensionTestApp(QMainWindow):
 			self.symbol_tests.setCurrentIndex(1)
 			self.symbol_tests.removeWidget(self.symbol_tests.widget(0))
 
+	"""
+	@modifies self.symbol_tests
+	@effects  decreases the current symbol_test's index in self.symbol_tests by 1,
+			  moves it down 1 postion
+	"""
 	def move_test_left(self):
 		cur_idx = self.symbol_tests.currentIndex()
 		if cur_idx > 0:
@@ -468,7 +558,12 @@ class ComprehensionTestApp(QMainWindow):
 
 			self.symbol_tests.removeWidget(prev_widget)
 			self.symbol_tests.insertWidget(self.symbol_tests.indexOf(cur_widget) + 1, prev_widget)
-		
+	
+	"""
+	@modifies self.symbol_tests
+	@effects  increases the current symbol_test's index in self.symbol_tests by 1,
+			  moves it up 1 postion
+	"""	
 	def move_test_right(self):
 		cur_idx = self.symbol_tests.currentIndex()
 		if cur_idx < self.symbol_tests.count() - 1:
@@ -480,6 +575,10 @@ class ComprehensionTestApp(QMainWindow):
 			self.symbol_tests.removeWidget(next_widget)
 			self.symbol_tests.insertWidget(self.symbol_tests.indexOf(cur_widget), next_widget)
 
+	"""
+	@modifies self.symbol_tests
+	@effects  moves the current symbol_test to a specified position in self.symbol_tests
+	"""
 	def move_to_page(self):
 		text = QInputDialog.getText(self, "Move Page", "Move current page to: ", QLineEdit.Normal)
 		try:
@@ -511,6 +610,10 @@ class ComprehensionTestApp(QMainWindow):
 			error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
 			error.exec_()
 
+	"""
+	@modifies self.symbol_tests
+	@effects  sets the surrent symbol_test equal to the one at the specified page
+	"""
 	def go_to_page(self):
 		text = QInputDialog.getText(self, "Go to", "Go to page: ", QLineEdit.Normal)
 		try:
@@ -531,6 +634,10 @@ class ComprehensionTestApp(QMainWindow):
 			error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
 			error.exec_()
 
+	"""
+	@modifies self.question1, self.question2
+	@effects  changes the default questions
+	"""
 	def change_questions(self):
 		text = QInputDialog.getText(self, "Question 1 Input", "Question 1: ", QLineEdit.Normal, self.question1)
 		if str(text[0]) != '':
