@@ -42,8 +42,6 @@ class SymbolTestWidget(QWidget):
 	@modifies 
 	"""
 	def init_gui(self, parent):
-		#self.setFixedHeight(800)
-		#self.setFixedWidth(800)
 		self.layout.setSpacing(5)
 
 		if self.symbol_ != None:
@@ -59,13 +57,14 @@ class SymbolTestWidget(QWidget):
 
 		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
 		self.layout.addWidget(self.page_label, 0, 10, 1, 1)
-		#self.layout.columnMinimumWidth(10)
+
 		self.layout.setRowStretch(0, 1)
 		self.layout.setRowStretch(15, 1)
 		self.layout.setColumnStretch(3, 1)
 		self.layout.setColumnStretch(2, 1)
 		self.layout.setColumnStretch(9, 2)
 		self.layout.setColumnStretch(0, 2)
+		
 		if self.visual_context_ == None and self.text_context_ != None:
 			self.textual_label.setText("<b>Context:</b>")
 			self.textual_edit.setText(self.text_context_)
@@ -119,6 +118,7 @@ class SymbolTestWidget(QWidget):
 			pic = pic.scaled(350, 350)
 			self.symbol_ = fname[0]
 			self.symbol_label.setPixmap(pic)
+		
 		elif fname == ('', '') and self.symbol_ == None:
 			pic = QPixmap("blank image.png") 
 			pic = pic.scaled(350, 350)
@@ -130,6 +130,7 @@ class SymbolTestWidget(QWidget):
 			pic = QPixmap(fname[0])
 			pic = pic.scaled(350, 350)
 			self.visual_label.setPixmap(pic)
+			
 			if self.visual_context_ == None:
 				self.textual_edit.hide()
 				self.textual_label.hide()
@@ -143,6 +144,7 @@ class SymbolTestWidget(QWidget):
 			self.textual_edit.hide()
 			self.textual_label.hide()
 			self.visual_label.show()
+		
 		else:
 			self.textual_label.show()
 			self.textual_edit.show()
@@ -170,18 +172,24 @@ class SymbolTestWidget(QWidget):
 
 	def get_symbol(self):
 		return self.symbol_label.pixmap()
+
 	def get_context(self):
 		return str(self.textual_edit.toPlainText())
+	
 	def get_question1(self):
 		return str(self.questions[0])
+	
 	def get_question2(self):
 		return str(self.questions[1])
+	
 	def has_visual_context(self):
 		if self.visual_context_ != None:
 			return True
 		return False
+	
 	def get_visual_context(self):
 		return self.visual_label.pixmap()
+	
 	def print_visual_context(self):
 		if self.visual_context_ != None and self.text_contextBtn.isVisible():
 			return True
@@ -200,7 +208,7 @@ class ComprehensionTestApp(QMainWindow):
 		exitAct = QAction('&Exit', self)
 		exitAct.setShortcut('Ctrl+Q')
 		exitAct.setStatusTip('Exit application')
-		exitAct.triggered.connect(qApp.quit)
+		exitAct.triggered.connect(self.quit)
 
 		saveAct = QAction('&Save as PDF', self)
 		saveAct.setShortcut('Ctrl+S')
@@ -277,12 +285,27 @@ class ComprehensionTestApp(QMainWindow):
 		tool_bar.addAction(remAct)
 
 		self.setWindowTitle("Open Comprehension Test Generator")
-		self.setWindowIcon(QIcon("rubber duckie.png"))
+		self.setWindowIcon(QIcon("rubber ducky.png"))
 		self.setGeometry(500, 500, 500, 450)
 		self.add_blank_test()
 		self.setCentralWidget(self.symbol_tests)
 
 		self.show()
+
+	def closeEvent(self, event):
+		msg = QMessageBox.question(self, 'Message',
+            "Really quit?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+		if msg == QMessageBox.Yes:
+			event.accept()
+		else:
+			event.ignore()
+
+	def quit(self):
+		msg = QMessageBox.question(self, 'Message',
+            "Really quit?", QMessageBox.Yes | 
+            QMessageBox.No, QMessageBox.No)
+		if msg == QMessageBox.Yes:
+			qApp.quit()
 
 	def add_blank_test(self):
 		page = self.symbol_tests.count() + 1
@@ -301,9 +324,8 @@ class ComprehensionTestApp(QMainWindow):
 			self.symbol_tests.setCurrentIndex(self.symbol_tests.currentIndex() - 1)
 
 	def save_as_pdf(self):
-		global TEMPLATE
 		filename = QFileDialog.getSaveFileName(self, 'Save to PDF', 'c:\\',"*.pdf")
-		print(filename)
+		#print(filename)
 
 		if filename != ('', ''):
 			if os.path.exists(filename[0]):
@@ -320,8 +342,10 @@ class ComprehensionTestApp(QMainWindow):
 			printer.setOutputFileName(filename[0])
 			
 			painter = QPainter()
+			
 			font = QFont("times")
 			font.setPointSize(12)
+			
 			painter.begin(printer)
 			painter.setFont(font)
 
@@ -331,6 +355,7 @@ class ComprehensionTestApp(QMainWindow):
 				if cur_symbol_test.has_visual_context() == False:
 					pixmap = cur_symbol_test.get_symbol()
 					pixmap = pixmap.scaled(350, 350)
+					
 					painter.drawPixmap(30, 100, pixmap)
 					painter.drawText(750, 20, cur_symbol_test.get_page())
 					painter.drawText(420, 200, 350, 400, QtCore.Qt.TextWordWrap, "Context: " + cur_symbol_test.get_context())
@@ -349,6 +374,7 @@ class ComprehensionTestApp(QMainWindow):
 					painter.drawLine(70, 942, 600, 942)
 					painter.drawLine(70, 998, 600, 998)
 					painter.setPen(cur_pen)
+
 				else:
 					pixmap = cur_symbol_test.get_visual_context()
 					pixmap = pixmap.scaled(300, 300)
@@ -450,10 +476,10 @@ class ComprehensionTestApp(QMainWindow):
 				error = QMessageBox()
 				error.setIcon(QMessageBox.Warning)
 				error.setStandardButtons(QMessageBox.Ok)
-				#error.setTitle("Error")
 				error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
 				error.exec_()
 				return
+
 			cur_idx = self.symbol_tests.currentIndex()
 			cur_widget = self.symbol_tests.widget(cur_idx)
 			cur_widget.set_page(x - 1)
@@ -470,7 +496,6 @@ class ComprehensionTestApp(QMainWindow):
 			error = QMessageBox()
 			error.setIcon(QMessageBox.Warning)
 			error.setStandardButtons(QMessageBox.Ok)
-			#error.setTitle("Error")
 			error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
 			error.exec_()
 
@@ -485,6 +510,7 @@ class ComprehensionTestApp(QMainWindow):
 				error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
 				error.exec_()
 				return
+
 			self.symbol_tests.setCurrentIndex(x - 1)
 		except ValueError:
 			error = QMessageBox()
