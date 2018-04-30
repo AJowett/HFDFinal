@@ -36,6 +36,7 @@ class SymbolTestWidget(QWidget):
 
 		self.page = pageNumber
 		self.numPages = pageTotal
+		self.last_visual = False
 		self.init_gui(parent)
 
 	"""
@@ -147,7 +148,7 @@ class SymbolTestWidget(QWidget):
 				self.textual_label.hide()
 				self.text_contextBtn.show()
 				self.layout.addWidget(self.visual_label, 6, 6, 3, 5)
-			
+			self.last_visual = True
 			self.visual_context_ = fname[0]
 
 	"""
@@ -161,13 +162,13 @@ class SymbolTestWidget(QWidget):
 			self.textual_label.hide()
 			self.visual_label.show()
 			self.text_contextBtn.setText("Change to textual context mode")
-		
+			self.last_visual = True
 		else:
 			self.textual_label.show()
 			self.textual_edit.show()
 			self.visual_label.hide()
 			self.text_contextBtn.setText("Change to visual context mode")
-
+			self.last_visual = False
 	def get_page(self):
 		return str(self.page)
 
@@ -228,7 +229,7 @@ class SymbolTestWidget(QWidget):
 	@returns true if we are printing an image as context
 	"""
 	def print_visual_context(self):
-		if self.visual_context_ != None and self.text_contextBtn.isVisible():
+		if self.visual_context_ != None and self.last_visual:
 			return True
 		else:
 			return False
