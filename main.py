@@ -76,8 +76,8 @@ class SymbolTestWidget(QWidget):
 			self.layout.addWidget(self.textual_label, 6, 8)
 			self.layout.addWidget(self.textual_edit, 7, 8, 1, 1)
 
-			self.text_contextBtn = QPushButton("Change to Textual/Visual Context", self)
-			self.text_contextBtn.setToolTip("Switch between textual and visual context modes")
+			self.text_contextBtn = QPushButton("Change to Textual/Visual Context View", self)
+			self.text_contextBtn.setToolTip("Switch between textual and visual context modes, whichever one you're in will be saved")
 			self.text_contextBtn.clicked.connect(self.switch_to_textual)
 			self.layout.addWidget(self.text_contextBtn, 9, 2, 1, 1)
 
@@ -325,14 +325,20 @@ class ComprehensionTestApp(QMainWindow):
 
 	def save_as_pdf(self):
 		filename = QFileDialog.getSaveFileName(self, 'Save to PDF', 'c:\\',"*.pdf")
-		#print(filename)
 
 		if filename != ('', ''):
 			if os.path.exists(filename[0]):
-				#os.remove(filename[0])
-				infile = PdfFileReader(filename[0], 'rb')
-
+				try:
+					infile = PdfFileReader(filename[0], 'rb')
+				except:
+					error = QMessageBox()
+					error.setIcon(QMessageBox.Warning)
+					error.setStandardButtons(QMessageBox.Ok)
+					error.setText("File could not be written to. If the file is currently open, try closing it")
+					error.exec_()
+					return
 				if infile.getNumPages() == 0:
+					print("HERE!")
 					doc = QTextDocument()
 					doc.print(printer)
 
@@ -346,13 +352,20 @@ class ComprehensionTestApp(QMainWindow):
 			font = QFont("times")
 			font.setPointSize(12)
 			
-			painter.begin(printer)
+			x = painter.begin(printer)
+			if x == False:
+				error = QMessageBox()
+				error.setIcon(QMessageBox.Warning)
+				error.setStandardButtons(QMessageBox.Ok)
+				error.setText("File could not be written to. If the file is currently open, try closing it")
+				error.exec_()
+				return
 			painter.setFont(font)
 
 			for i in range(0, self.symbol_tests.count()):
 				cur_symbol_test = self.symbol_tests.widget(i)
 				
-				if cur_symbol_test.has_visual_context() == False:
+				if cur_symbol_test.print_visual_context() == False:
 					pixmap = cur_symbol_test.get_symbol()
 					pixmap = pixmap.scaled(350, 350)
 					
@@ -410,9 +423,8 @@ class ComprehensionTestApp(QMainWindow):
 
 	def import_symbols(self):
 		fnames = QFileDialog.getOpenFileNames(self, 'Open file', 'c:\\',"Image files (*.jpg *.png)")
-		#print(fnames)
 		if fnames != ([], ''):
-			for i in range(len(fnames[0]) - 1, -1, -1):
+			for i in range(0, len(fnames[0])):
 				page = self.symbol_tests.count() + 1
 				test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
 				test.set_symbol(fnames[0][i])
