@@ -58,7 +58,7 @@ class SymbolTestWidget(QWidget):
 		self.layout.addWidget(self.symbol_label, 6, 1, 3, 5)
 
 		self.page_label.setText("<b>Page " + str(self.page) + "/" + str(self.numPages) + "</b>")
-		self.layout.addWidget(self.page_label, 0, 10, 1, 1)
+		self.layout.addWidget(self.page_label, 0, 12, 1, 1)
 
 		self.layout.setColumnMinimumWidth(8, 5)
 
@@ -94,7 +94,7 @@ class SymbolTestWidget(QWidget):
 			pic = QPixmap(self.visual_context_)
 			pic = pic.scaled(350, 350)
 			self.visual_label.setPixmap(pic)
-			self.layout.addWidget(self.visual_label, 1, 1, 4, 5)
+			self.layout.addWidget(self.visual_label, 6, 6, 3, 5)
 
 		symbolBtn = QPushButton("Add Symbol", self)
 		symbolBtn.setToolTip("Used to add or change the symbol on this page")
@@ -146,7 +146,7 @@ class SymbolTestWidget(QWidget):
 				self.textual_edit.hide()
 				self.textual_label.hide()
 				self.text_contextBtn.show()
-				self.layout.addWidget(self.visual_label, 1, 1, 4, 5)
+				self.layout.addWidget(self.visual_label, 6, 6, 3, 5)
 			
 			self.visual_context_ = fname[0]
 
