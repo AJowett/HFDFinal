@@ -27,6 +27,7 @@ class SymbolTestWidget(QWidget):
 		self.textual_label = QLabel(self)
 		self.textual_edit = QTextEdit(self)
 		self.visual_label = QLabel(self)
+		self.visual_desciption = QLabel(self)
 
 		self.visual_contextBtn = QPushButton()
 		self.text_contextBtn = QPushButton()
@@ -70,19 +71,26 @@ class SymbolTestWidget(QWidget):
 		self.layout.setColumnStretch(10, 2)
 		self.layout.setColumnStretch(0, 2)
 		
+		self.visual_desciption.setText("<b>Context image will appear above of symbol when saved</b>")
+		self.layout.addWidget(self.visual_desciption, 5, 6)
+		self.visual_desciption.hide()
+
+		self.layout.addWidget(self.visual_label, 6, 6, 3, 5)
+		self.visual_label.hide()
+
 		if self.visual_context_ == None and self.text_context_ != None:
-			self.textual_label.setText("<b>Context:</b>")
+			self.textual_label.setText("<b> Description of Symbol Context:</b>")
 			self.textual_edit.setText(self.text_context_)
 			self.layout.addWidget(self.textual_label, 6, 9)
 			self.layout.addWidget(self.textual_edit, 7, 9, 1, 1)
 
 		elif self.visual_context_ == None and self.text_context_ == None:
-			self.textual_label.setText("<b>Context:</b>")
+			self.textual_label.setText("<b>Description of Symbol Context:</b>")
 			self.layout.addWidget(self.textual_label, 6, 9)
 			self.layout.addWidget(self.textual_edit, 7, 9, 1, 1)
 
-			self.text_contextBtn = QPushButton("Change to visual context mode", self)
-			self.text_contextBtn.setToolTip("Switch between textual and visual context modes, whichever one you're in will be saved")
+			self.text_contextBtn = QPushButton("Switch to visual context", self)
+			self.text_contextBtn.setToolTip("Switch between textual and visual context modes, whichever one is selected will be the one that is saved")
 			self.text_contextBtn.clicked.connect(self.switch_to_textual)
 			self.layout.addWidget(self.text_contextBtn, 9, 2, 1, 1)
 
@@ -95,7 +103,7 @@ class SymbolTestWidget(QWidget):
 			pic = QPixmap(self.visual_context_)
 			pic = pic.scaled(350, 350)
 			self.visual_label.setPixmap(pic)
-			self.layout.addWidget(self.visual_label, 6, 6, 3, 5)
+			self.visual_label.show()
 
 		symbolBtn = QPushButton("Add Symbol", self)
 		symbolBtn.setToolTip("Used to add or change the symbol on this page")
@@ -142,12 +150,13 @@ class SymbolTestWidget(QWidget):
 			pic = QPixmap(fname[0])
 			pic = pic.scaled(350, 350)
 			self.visual_label.setPixmap(pic)
-			
-			if self.visual_context_ == None:
+			self.visual_label.show()
+			if self.visual_context_ == 'blank image.png':
 				self.textual_edit.hide()
 				self.textual_label.hide()
 				self.text_contextBtn.show()
-				self.layout.addWidget(self.visual_label, 6, 6, 3, 5)
+				self.visual_desciption.show()
+				self.text_contextBtn.setText("Switch to textual context")
 			self.last_visual = True
 			self.visual_context_ = fname[0]
 
@@ -161,14 +170,17 @@ class SymbolTestWidget(QWidget):
 			self.textual_edit.hide()
 			self.textual_label.hide()
 			self.visual_label.show()
-			self.text_contextBtn.setText("Change to textual context mode")
+			self.visual_desciption.show()
+			self.text_contextBtn.setText("Switch to textual context")
 			self.last_visual = True
 		else:
 			self.textual_label.show()
 			self.textual_edit.show()
 			self.visual_label.hide()
-			self.text_contextBtn.setText("Change to visual context mode")
+			self.visual_desciption.hide()
+			self.text_contextBtn.setText("Switch to visual context")
 			self.last_visual = False
+	
 	def get_page(self):
 		return str(self.page)
 
@@ -225,6 +237,13 @@ class SymbolTestWidget(QWidget):
 	def get_visual_context(self):
 		return self.visual_label.pixmap()
 
+	def set_visual_context(self, image):
+		self.visual_context_ = image
+		pic = QPixmap(image)
+		pic = pic.scaled(350, 350)
+		self.visual_label.setPixmap(pic)
+		self.visual_label.hide()
+
 	"""
 	@returns true if we are printing an image as context
 	"""
@@ -279,7 +298,7 @@ class ComprehensionTestApp(QMainWindow):
 
 		newQuestAct = QAction('&Change default questions', self)
 		newQuestAct.setStatusTip('Changes the default questions asked about the symbol')
-		newQuestAct.setShortcut('Ctrl+P')
+		newQuestAct.setShortcut('Ctrl+H')
 		newQuestAct.triggered.connect(self.change_questions)
 
 		moveLeftAct = QAction('&Move current page left', self)
@@ -293,24 +312,30 @@ class ComprehensionTestApp(QMainWindow):
 		moveRightAct.triggered.connect(self.move_test_right)
 
 		moveToAct = QAction('Move current page to', self)
-		moveToAct.setShortcut('Ctrl+')
+		moveToAct.setShortcut('Ctrl+M')
 		moveToAct.setStatusTip('Moves the current page to the specified page')
 		moveToAct.triggered.connect(self.move_to_page)
 
+		delPagesAct = QAction('Delete pages', self)
+		delPagesAct.setShortcut('Ctrl+D')
+		delPagesAct.setStatusTip('Deletes the specified pages')
+		delPagesAct.triggered.connect(self.delete_pages)
+
 		editmenu = menu_bar.addMenu('&Edit')
-		editmenu.addAction(goToAct)
+		editmenu.addAction(delPagesAct)
 		editmenu.addAction(newQuestAct)
+		editmenu.addAction(goToAct)
 		editmenu.addAction(moveLeftAct)
 		editmenu.addAction(moveRightAct)
 		editmenu.addAction(moveToAct)
 
-		nextAct = QAction(QIcon("next.png"), 'Next page (Ctrl+L)', self)
-		nextAct.setShortcut('Ctrl+L')
+		nextAct = QAction(QIcon("next.png"), 'Next page (Ctrl+P)', self)
+		nextAct.setShortcut('Ctrl+P')
 		nextAct.setStatusTip('Goes to the next page')
 		nextAct.triggered.connect(self.next_page)
 
-		prevAct = QAction(QIcon("prev.png"), "Previous page (Ctrl+K)", self)
-		prevAct.setShortcut('Ctrl+K')
+		prevAct = QAction(QIcon("prev.png"), "Previous page (Ctrl+O)", self)
+		prevAct.setShortcut('Ctrl+O')
 		prevAct.setStatusTip('Goes to the previous page')
 		prevAct.triggered.connect(self.prev_page)
 
@@ -369,6 +394,7 @@ class ComprehensionTestApp(QMainWindow):
 	def add_blank_test(self):
 		page = self.symbol_tests.count() + 1
 		test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
+		test.set_visual_context("blank image.png")
 		self.symbol_tests.addWidget(test)
 		self.symbol_tests.setCurrentIndex(page - 1)
 		for i in range(0, self.symbol_tests.count() - 1):
@@ -428,7 +454,7 @@ class ComprehensionTestApp(QMainWindow):
 				error = QMessageBox()
 				error.setIcon(QMessageBox.Warning)
 				error.setStandardButtons(QMessageBox.Ok)
-				error.setText("File could not be written to. If the file is currently open, try closing it")
+				error.setText("File could not be saved. If the file is currently open, try closing it")
 				error.exec_()
 				return
 			painter.setFont(font)
@@ -504,8 +530,12 @@ class ComprehensionTestApp(QMainWindow):
 				page = self.symbol_tests.count() + 1
 				test = SymbolTestWidget(self, comp_questions=[self.question1, self.question2], pageNumber=page, pageTotal=page)
 				test.set_symbol(fnames[0][i])
+				test.set_visual_context("blank image.png")
 				self.symbol_tests.addWidget(test)
 			self.symbol_tests.setCurrentIndex(page - 1)
+
+			for i in range(0, self.symbol_tests.count()):
+				self.symbol_tests.widget(i).set_numPages(self.symbol_tests.count())
 
 	"""
 	@modifies self.symbol_tests
@@ -582,34 +612,35 @@ class ComprehensionTestApp(QMainWindow):
 	"""
 	def move_to_page(self):
 		text = QInputDialog.getText(self, "Move Page", "Move current page to: ", QLineEdit.Normal)
-		try:
-			x = int(text[0])
-			if x <= 0 or x > self.symbol_tests.count():
+		if text[1] != False:
+			try:
+				x = int(text[0])
+				if x <= 0 or x > self.symbol_tests.count():
+					error = QMessageBox()
+					error.setIcon(QMessageBox.Warning)
+					error.setStandardButtons(QMessageBox.Ok)
+					error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
+					error.exec_()
+					return
+
+				cur_idx = self.symbol_tests.currentIndex()
+				cur_widget = self.symbol_tests.widget(cur_idx)
+				cur_widget.set_page(x - 1)
+
+				self.symbol_tests.removeWidget(cur_widget)
+				self.symbol_tests.insertWidget(x - 1, cur_widget)
+				self.symbol_tests.setCurrentIndex(x - 1)
+
+				for i in range(0, self.symbol_tests.count()):
+					loop_widget = self.symbol_tests.widget(i)
+					loop_widget.set_page(i + 1)
+
+			except ValueError:
 				error = QMessageBox()
 				error.setIcon(QMessageBox.Warning)
 				error.setStandardButtons(QMessageBox.Ok)
-				error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
+				error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
 				error.exec_()
-				return
-
-			cur_idx = self.symbol_tests.currentIndex()
-			cur_widget = self.symbol_tests.widget(cur_idx)
-			cur_widget.set_page(x - 1)
-
-			self.symbol_tests.removeWidget(cur_widget)
-			self.symbol_tests.insertWidget(x - 1, cur_widget)
-			self.symbol_tests.setCurrentIndex(x - 1)
-
-			for i in range(0, self.symbol_tests.count()):
-				loop_widget = self.symbol_tests.widget(i)
-				loop_widget.set_page(i + 1)
-
-		except ValueError:
-			error = QMessageBox()
-			error.setIcon(QMessageBox.Warning)
-			error.setStandardButtons(QMessageBox.Ok)
-			error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
-			error.exec_()
 
 	"""
 	@modifies self.symbol_tests
@@ -617,23 +648,24 @@ class ComprehensionTestApp(QMainWindow):
 	"""
 	def go_to_page(self):
 		text = QInputDialog.getText(self, "Go to", "Go to page: ", QLineEdit.Normal)
-		try:
-			x = int(text[0])
-			if x <= 0 or x > self.symbol_tests.count():
+		if text[1] != False:
+			try:
+				x = int(text[0])
+				if x <= 0 or x > self.symbol_tests.count():
+					error = QMessageBox()
+					error.setIcon(QMessageBox.Warning)
+					error.setStandardButtons(QMessageBox.Ok)
+					error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
+					error.exec_()
+					return
+
+				self.symbol_tests.setCurrentIndex(x - 1)
+			except ValueError:
 				error = QMessageBox()
 				error.setIcon(QMessageBox.Warning)
 				error.setStandardButtons(QMessageBox.Ok)
-				error.setText("Page must be between 1 and " + str(self.symbol_tests.count()))
+				error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
 				error.exec_()
-				return
-
-			self.symbol_tests.setCurrentIndex(x - 1)
-		except ValueError:
-			error = QMessageBox()
-			error.setIcon(QMessageBox.Warning)
-			error.setStandardButtons(QMessageBox.Ok)
-			error.setText("Can only enter an integer between 1 and " + str(self.symbol_tests.count()))
-			error.exec_()
 
 	"""
 	@modifies self.question1, self.question2
@@ -646,6 +678,58 @@ class ComprehensionTestApp(QMainWindow):
 		text = QInputDialog.getText(self, "Question 2 Input", "Question 2: ", QLineEdit.Normal, self.question2)
 		if str(text[0]) != '':
 			self.question2 = str(text[0])
+
+	def delete_pages(self):
+		text = QInputDialog.getText(self, "Delete pages", "Enter page numbers seperated by a comma:", QLineEdit.Normal)
+		error = QMessageBox()
+		error.setIcon(QMessageBox.Warning)
+		error.setStandardButtons(QMessageBox.Ok)
+		if text[1] != False:
+			pages = text[0].split(",")
+			del_widgets = []
+			for page in pages:
+				try:
+					x = int(page)
+				except:
+					error.setText("All page numbers must be integers")
+					error.exec_()
+					return
+				if int(page) > self.symbol_tests.count() or int(page) < 1:
+					error.setText("Page " + page + " does not exist")
+					error.exec_()
+					return
+				del_widgets.append(self.symbol_tests.widget(int(page) - 1))
+			
+			confirm = QMessageBox.question(self, 'Message',
+            "Really delete pages: " + text[0] + "?", QMessageBox.Yes | 
+            QMessageBox.No, QMessageBox.No)
+			
+			for del_widget in del_widgets:
+				del_idx = self.symbol_tests.indexOf(del_widget)
+				if del_idx != self.symbol_tests.currentIndex():
+					self.symbol_tests.removeWidget(del_widget)
+				else:
+					#Removing the only test
+					if self.symbol_tests.count() == 1:
+						self.add_blank_test()
+						self.symbol_tests.removeWidget(del_widget)
+						self.symbol_tests.currentWidget().set_page(1)
+						self.symbol_tests.currentWidget().set_numPages(1)
+						return 
+					else:
+						if del_idx == self.symbol_tests.count() - 1:
+							self.symbol_tests.setCurrentIndex(del_idx - 1)
+							self.symbol_tests.removeWidget(del_widget)
+						else:
+							self.symbol_tests.setCurrentIndex(del_idx + 1)
+							self.symbol_tests.removeWidget(del_widget)
+
+			count = 1
+			for i in range(0, self.symbol_tests.count()):
+				cur_widget = self.symbol_tests.widget(i)
+				cur_widget.set_page(count)
+				cur_widget.set_numPages(self.symbol_tests.count())
+				count += 1
 
 def main():
 	app = QApplication(sys.argv)
